@@ -4,7 +4,20 @@ import pygame
 import math
 import threading
 import sys
+import xml.etree.ElementTree as ET
 
+def parse_musicxml(file):
+    tree = ET.parse(file)
+    print(tree)
+    measures = tree.find("part").findall("measure")
+    for m in measures:
+        last_x = 0
+        print(m)
+        items = m.iterfind("*")
+        for i in items:
+            if i.tag == "note":
+                print(i.get("default-x"))
+            elif i.tag == "backup": break
 
 def run_game():
     pygame.init()
@@ -79,11 +92,12 @@ def run_game():
     pygame.quit()
 
 def main():
-    game_thread = threading.Thread(target=run_game)
+    parse_musicxml("Gravity_Falls_Opening_-_Intermediate_Piano_Solo.musicxml")
+    # game_thread = threading.Thread(target=run_game)
 
-    game_thread.start()
+    # game_thread.start()
 
-    game_thread.join()
+    # game_thread.join()
 
 if __name__ == "__main__":
     main()
