@@ -1,19 +1,22 @@
-import wave
 # import numpy as np
 # from scipy import signal    
 import pygame
 import math
-from playsound import playsound
+import threading
+import sys
 
-def main():
+
+def run_game():
     pygame.init()
-    playsound("Gravity Falls.wav")
-
     clock = pygame.time.Clock()
+    pygame.mixer.init()
+    pygame.mixer.music.load("Gravity Falls.wav")
     FPS = 100
 
     SCREEN_WIDTH = 800
     SCREEN_HEIGHT = 800
+    ud = False
+    lr = True
 
     #create game window
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -29,6 +32,7 @@ def main():
     tiles = math.ceil(SCREEN_WIDTH  / bg_width) + 1
 
     #game loop
+    pygame.mixer.music.play(-1)
     run = True
     while run:
 
@@ -49,33 +53,37 @@ def main():
 
         #event handler
         for event in pygame.event.get():
-            if event.type == pygame.QUIT: run = False
+            if event.type == pygame.QUIT:
+                run = False
+            keys = pygame.key.get_pressed()
+            if event.type == pygame.KEYDOWN:
+                if not ud and (keys[pygame.K_UP] or keys[pygame.K_DOWN]):
+                    ud = True
+                    lr = False
+                    bg = pygame.transform.rotate(bg, 90)
+                    bg_width = bg.get_width()
+                    bg_rect = bg.get_rect()
+                    tiles = math.ceil(SCREEN_WIDTH / bg_width) + 1
+                if not lr and (keys[pygame.K_LEFT] or keys[pygame.K_RIGHT]):
+                    lr = True
+                    ud = False
+                    bg = pygame.transform.rotate(bg, -90)
+                    bg_width = bg.get_width()
+                    bg_rect = bg.get_rect()
+                    tiles = math.ceil(SCREEN_WIDTH / bg_width) + 1
 
         pygame.display.update()
 
+    pygame.mixer.stop()
+    pygame.mixer.quit()
     pygame.quit()
 
+def main():
+    game_thread = threading.Thread(target=run_game)
 
+    game_thread.start()
 
+    game_thread.join()
 
 if __name__ == "__main__":
     main()
-
-# wave_obj = wave.open("Gravity Falls.wav", "rb")
-# samples_per_sec = wave_obj.getframerate()
-# samples = wave_obj.getnframes()
-# length = samples/samples_per_sec
-# print(f"{samples}/{samples_per_sec}={length}")
-# print(samples_per_sec * 0.1)
-# signalwave = wave_obj.readframes(samples)
-# signal_array = np.frombuffer(signalwave, dtype=np.int16)
-# times = np.linspace(0, samples/samples_per_sec, num=samples)
-# print(times)
-# print([1,2,3])
-# peaks_indices = signal.find_peaks(signal_array)
-# print(peaks_indices[0])
-# peak_times = []
-# for i in list(peaks_indices[0][0:20]):
-#     peak_times.append(times[i])
-
-# print(peak_times)
