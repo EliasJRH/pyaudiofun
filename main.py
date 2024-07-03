@@ -22,18 +22,18 @@ notes_to_beat = {
 }
 
 
-@cache
-def find_tempo(element):
-    try:
-        return (
-            element.find("direction")
-            .find("direction-type")
-            .find("metronome")
-            .find("per-minute")
-            .text
-        )
-    except AttributeError:
-        return None
+# @cache
+# def find_tempo(element):
+#     try:
+#         return (
+#             element.find("direction")
+#             .find("direction-type")
+#             .find("metronome")
+#             .find("per-minute")
+#             .text
+#         )
+#     except AttributeError:
+#         return None
 
 @cache
 def get_tempo(element):
@@ -47,6 +47,13 @@ def get_tempo(element):
     except AttributeError:
         return None
 
+@cache
+def get_divisions(element):
+    try:
+        return element.find("divisions").text
+    except AttributeError:
+        return None
+
 def parse_musicxml(file):
     tree = ET.parse(file)
     measures = tree.find("part").findall("measure")
@@ -54,6 +61,7 @@ def parse_musicxml(file):
     last_second = 0
     tempo = None
     sbp = None # Second per beat, how long a beat lasts in seconds, used to calculate note delays
+    divisions = None # Number of divisions per beat, used to calculate note delays in absence of note type
 
     for n, m in enumerate(measures):
         items = m.iterfind("*")  # Used to find all notes
@@ -71,18 +79,23 @@ def parse_musicxml(file):
 
                 # Calculate next beat time
 
-                print(item.get("default-x"), item.get("default-y"))
-                type = item.find("type").text  # Type of note (whole, half, etc)
-                
                 # If the note is dotted, we'll need to add an additional half of its length
                 dotted = True if item.find("dot") is not None else False
+
+                try: 
+                    type = item.find("type").text  # Type of note (whole, half, etc)
+                    num_beats = notes_to_beat[type] + (notes_to_beat[type] / 2 if dotted else 0)
+                except AttributeError:
+                    duration = item.find("duration").text  # If the type of note is not specified, we use the duration
+                    num_beats = int(duration) / divisions
                 
                 # Update next beat time
-                num_beats = notes_to_beat[type] + (notes_to_beat[type] / 2 if dotted else 0)
                 last_second += num_beats * spb
             elif item.tag == "direction":
                 tempo = int(get_tempo(item)) if get_tempo(item) else tempo
                 spb = 60 / tempo
+            elif item.tag == "attributes":
+                divisions = int(get_divisions(item)) if get_divisions(item) else divisions
             elif item.tag == "backup":
                 break
     return note_delays_seconds
@@ -178,7 +191,9 @@ def main():
     #     "songs/Phinease and Ferb/Phineas_and_ferb_theme_–_Bowling_for_Soup_Phineas_and_Ferb_-_Theme_song.musicxml"
     # )
     # note_times = parse_musicxml("songs/Rush E/Rush_E_but_it&#039;s_as_difficult_as_humanly_possible.musicxml")
-    note_times = parse_musicxml("Im_Still_Standing_Elton_John.musicxml")
+    # note_times = parse_musicxml("Im_Still_Standing_Elton_John.musicxml")
+    # note_times = parse_musicxml("songs/Rocky/Rocky_(Theme).musicxml")
+    note_times = parse_musicxml("songs/Imitation Game/The_Imitation_Game.musicxml")
     print(note_times)
     # game_thread = threading.Thread(target=run_game)
     # beat_thread = threading.Thread(target=print_beat_changes, args=(note_times,))
