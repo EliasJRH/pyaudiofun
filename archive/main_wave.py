@@ -3,21 +3,22 @@ import numpy as np
 from scipy import signal
 import matplotlib.pyplot as plt
 
+
 def main():
     # Create a wave object from the file
     wav_obj = wave.open("Gravity Falls.wav", "rb")
-    
+
     # Obtain number of samples per second and number of samples
     samples_per_sec = wav_obj.getframerate()
     samples = wav_obj.getnframes()
     channels = wav_obj.getnchannels()
 
     # From the number of samples and samples per second, calculate the length of the audio file
-    length = samples/samples_per_sec
+    length = samples / samples_per_sec
 
     # print(f"{samples}/{samples_per_sec}={length}")
     # print(samples_per_sec * 0.1)
-    
+
     # Read the wave object and convert it to a numpy array
     signalwave = wav_obj.readframes(samples)
     signal_array = np.frombuffer(signalwave, dtype=np.int16)
@@ -27,7 +28,7 @@ def main():
     r_channel = signal_array[1::2]
 
     # Obtain the time values for the x-axis
-    times = np.linspace(0, samples/samples_per_sec, num=samples)
+    times = np.linspace(0, samples / samples_per_sec, num=samples)
 
     peaks_indices_left = signal.find_peaks(l_channel, prominence=1)[0]
     # l_channel_and_times = list(zip(l_channel, times_left))
@@ -35,7 +36,7 @@ def main():
     peak_values = []
     for i in list(peaks_indices_left):
         if i >= len(l_channel):
-            break  
+            break
         peak_times.append(times[i])
         peak_values.append(l_channel[i])
 
