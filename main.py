@@ -14,6 +14,11 @@ notes_to_beat = {
     "quarter": 1,
     "eighth": 0.5,
     "16th": 0.25,
+    "32nd": 0.125,
+    "64th": 0.0625,
+    "128th": 0.03125,
+    "256th": 0.03125 / 2,
+    "512th": (0.03125 / 2) / 2,
 }
 
 
@@ -30,44 +35,54 @@ def find_tempo(element):
     except AttributeError:
         return None
 
-
+@cache
+def get_tempo(element):
+    try:
+        return (
+            element.find("direction-type")
+            .find("metronome")
+            .find("per-minute")
+            .text
+        )
+    except AttributeError:
+        return None
 
 def parse_musicxml(file):
     tree = ET.parse(file)
     measures = tree.find("part").findall("measure")
     note_delays_seconds = []
     last_second = 0
+    tempo = None
+    sbp = None # Second per beat, how long a beat lasts in seconds, used to calculate note delays
 
     for n, m in enumerate(measures):
-        last_x = 0  # Used to distinguish notes from each other
         items = m.iterfind("*")  # Used to find all notes
-        tempo = int(find_tempo(m)) if find_tempo(m) else (tempo if tempo else 0)
-        spb = 60 / tempo  # How many seconds each beat should last
         for item in items:
             
             # We only want to look at the primary notes, so we ignore the backup notes
             if item.tag == "note":
-                # If a note is on the other side of a tie, we ignore it because it's not a new beat
-                # if item.find("tie") is not None and item.find("tie").get("type") == "stop": continue
+                # Notes marked as a chord are played as part of the same beat as the previous note at the same time, so we ignore them 
+                is_chord = item.find("chord") is not None
+                if is_chord: continue
+
+                # Note delay seconds indicates the time in seconds after the beginning of the song that the note should be played
+                # If a note is a rest note OR if it is the end of a tied note, we ignore it because it won't be played
+                if (item.find("tie") is None or item.find("tie").get("type") != "stop") and item.find("rest") is None: note_delays_seconds.append((n + 1, last_second))
+
+                # Calculate next beat time
+
+                print(item.get("default-x"), item.get("default-y"))
+                type = item.find("type").text  # Type of note (whole, half, etc)
                 
-                # Some notes are stacked, so we only look at it if it's positioned differently
-                x_pos = float(item.get("default-x"))
-                if x_pos != last_x:
-                    # Note delay seconds indicates the time in seconds after the beginning of the song that the note should be played
-                    # If a note is a rest note OR if it is the end of a tied note, we ignore it because it won't be played
-                    if (item.find("tie") is None or item.find("tie").get("type") != "stop") and item.find("rest") is None: note_delays_seconds.append((n + 1, last_second))
-
-                    # Calculate next beat time
-
-                    type = item.find("type").text  # Type of note (whole, half, etc)
-                    last_x = x_pos
-                    
-                    # If the note is dotted, we'll need to add an additional half of its length
-                    dotted = True if item.find("dot") is not None else False
-                    
-                    # Update next beat time
-                    num_beats = notes_to_beat[type] + (notes_to_beat[type] / 2 if dotted else 0)
-                    last_second += num_beats * spb
+                # If the note is dotted, we'll need to add an additional half of its length
+                dotted = True if item.find("dot") is not None else False
+                
+                # Update next beat time
+                num_beats = notes_to_beat[type] + (notes_to_beat[type] / 2 if dotted else 0)
+                last_second += num_beats * spb
+            elif item.tag == "direction":
+                tempo = int(get_tempo(item)) if get_tempo(item) else tempo
+                spb = 60 / tempo
             elif item.tag == "backup":
                 break
     return note_delays_seconds
@@ -159,9 +174,11 @@ def main():
     # note_times = parse_musicxml(
     #     "songs/Gravity Falls/Gravity_Falls_Opening_-_Intermediate_Piano_Solo.musicxml"
     # )
-    note_times = parse_musicxml(
-        "songs/Phinease and Ferb/Phineas_and_ferb_theme_–_Bowling_for_Soup_Phineas_and_Ferb_-_Theme_song.musicxml"
-    )
+    # note_times = parse_musicxml(
+    #     "songs/Phinease and Ferb/Phineas_and_ferb_theme_–_Bowling_for_Soup_Phineas_and_Ferb_-_Theme_song.musicxml"
+    # )
+    # note_times = parse_musicxml("songs/Rush E/Rush_E_but_it&#039;s_as_difficult_as_humanly_possible.musicxml")
+    note_times = parse_musicxml("Im_Still_Standing_Elton_John.musicxml")
     print(note_times)
     # game_thread = threading.Thread(target=run_game)
     # beat_thread = threading.Thread(target=print_beat_changes, args=(note_times,))
