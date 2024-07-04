@@ -87,6 +87,8 @@ def parse_musicxml(file):
 
 def main():
     song_dirs = os.listdir("songs")
+    # Only display song that contain a musicxml file and a midi file
+    # I'm going to assume that they'll always be valid otherwise ¯\_(ツ)_/¯
     song_choices = [inquirer.List("song", 
                                  message="Pick a song", 
                                  choices=[song for song in song_dirs if 
@@ -94,8 +96,14 @@ def main():
                                           len(list(filter(lambda x: x.endswith(".mid"), os.listdir(f"songs/{song}"))))]
                                 )]
     ans = inquirer.prompt(song_choices)
-    # note_times = parse_musicxml("songs/Death by Glamour/Death_by_Glamour_piano.musicxml")
-    # print(note_times)
+    musicxml_fname = [f for f in os.listdir(f"songs/{ans["song"]}") if f.endswith(".musicxml")][0]
+    musicxml_fpath = f"songs/{ans["song"]}/{musicxml_fname}"
+    midi_fname = [f for f in os.listdir(f"songs/{ans["song"]}") if f.endswith(".mid")][0]
+    midi_fpath = f"songs/{ans["song"]}/{midi_fname}"
+    print(musicxml_fname)
+    beat_times = parse_musicxml(musicxml_fpath)
+    print(beat_times)
+    schedule_beats(beat_times, midi_fpath)
 
 
 if __name__ == "__main__":
