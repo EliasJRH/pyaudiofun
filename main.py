@@ -45,7 +45,10 @@ def get_tempo(element):
             .text
         )
     except AttributeError:
-        return None
+        try:
+            return element.find("sound").get("tempo")
+        except AttributeError:
+            return None
 
 @cache
 def get_divisions(element):
@@ -87,27 +90,18 @@ def parse_musicxml(file):
                     num_beats = notes_to_beat[type] + (notes_to_beat[type] / 2 if dotted else 0)
                 except AttributeError:
                     duration = item.find("duration").text  # If the type of note is not specified, we use the duration
-                    num_beats = int(duration) / divisions
+                    num_beats = (int(duration) / divisions) * (1.5 if dotted else 1)
                 
                 # Update next beat time
                 last_second += num_beats * spb
             elif item.tag == "direction":
                 tempo = int(get_tempo(item)) if get_tempo(item) else tempo
-                spb = 60 / tempo
+                if tempo: spb = 60 / tempo
             elif item.tag == "attributes":
                 divisions = int(get_divisions(item)) if get_divisions(item) else divisions
             elif item.tag == "backup":
                 break
     return note_delays_seconds
-
-
-def print_beat_changes(note_times):
-    last_second = 0
-    for i in note_times:
-        print(i - last_second)
-        last_second = i
-        time.sleep(i - last_second)
-        print(i)
 
 
 def run_game():
@@ -184,16 +178,7 @@ def run_game():
 
 
 def main():
-    # note_times = parse_musicxml(
-    #     "songs/Gravity Falls/Gravity_Falls_Opening_-_Intermediate_Piano_Solo.musicxml"
-    # )
-    # note_times = parse_musicxml(
-    #     "songs/Phinease and Ferb/Phineas_and_ferb_theme_–_Bowling_for_Soup_Phineas_and_Ferb_-_Theme_song.musicxml"
-    # )
-    # note_times = parse_musicxml("songs/Rush E/Rush_E_but_it&#039;s_as_difficult_as_humanly_possible.musicxml")
-    # note_times = parse_musicxml("Im_Still_Standing_Elton_John.musicxml")
-    # note_times = parse_musicxml("songs/Rocky/Rocky_(Theme).musicxml")
-    note_times = parse_musicxml("songs/Imitation Game/The_Imitation_Game.musicxml")
+    note_times = parse_musicxml("songs/Phineas and Ferb/score.xml")
     print(note_times)
     # game_thread = threading.Thread(target=run_game)
     # beat_thread = threading.Thread(target=print_beat_changes, args=(note_times,))
