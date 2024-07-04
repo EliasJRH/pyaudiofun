@@ -1,12 +1,7 @@
-# import numpy as np
-# from scipy import signal
 from functools import cache
-import pygame
-import math
-import threading
-import sys
 import xml.etree.ElementTree as ET
-import time
+import os
+import inquirer
 
 notes_to_beat = {
     "whole": 4,
@@ -20,21 +15,6 @@ notes_to_beat = {
     "256th": 0.03125 / 2,
     "512th": (0.03125 / 2) / 2,
 }
-
-
-# @cache
-# def find_tempo(element):
-#     try:
-
-#         return (
-#             element.find("direction")
-#             .find("direction-type")
-#             .find("metronome")
-#             .find("per-minute")
-#             .text
-#         )
-#     except AttributeError:
-#         return None
 
 @cache
 def get_tempo(element):
@@ -106,8 +86,16 @@ def parse_musicxml(file):
 
 
 def main():
-    note_times = parse_musicxml("songs/Death by Glamour/Death_by_Glamour_piano.musicxml")
-    print(note_times)
+    song_dirs = os.listdir("songs")
+    song_choices = [inquirer.List("song", 
+                                 message="Pick a song", 
+                                 choices=[song for song in song_dirs if 
+                                          len(list(filter(lambda x: x.endswith(".musicxml"), os.listdir(f"songs/{song}")))) and 
+                                          len(list(filter(lambda x: x.endswith(".mid"), os.listdir(f"songs/{song}"))))]
+                                )]
+    ans = inquirer.prompt(song_choices)
+    # note_times = parse_musicxml("songs/Death by Glamour/Death_by_Glamour_piano.musicxml")
+    # print(note_times)
 
 
 if __name__ == "__main__":
