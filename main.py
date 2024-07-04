@@ -25,6 +25,7 @@ notes_to_beat = {
 # @cache
 # def find_tempo(element):
 #     try:
+
 #         return (
 #             element.find("direction")
 #             .find("direction-type")
@@ -93,10 +94,10 @@ def parse_musicxml(file):
                     num_beats = (int(duration) / divisions) * (1.5 if dotted else 1)
                 
                 # Update next beat time
-                last_second += num_beats * spb
+                last_second += num_beats * sbp
             elif item.tag == "direction":
                 tempo = int(get_tempo(item)) if get_tempo(item) else tempo
-                if tempo: spb = 60 / tempo
+                if tempo: sbp = 60 / tempo
             elif item.tag == "attributes":
                 divisions = int(get_divisions(item)) if get_divisions(item) else divisions
             elif item.tag == "backup":
@@ -104,90 +105,9 @@ def parse_musicxml(file):
     return note_delays_seconds
 
 
-def run_game():
-    pygame.init()
-    clock = pygame.time.Clock()
-    pygame.mixer.init()
-    pygame.mixer.music.load("Gravity Falls.wav")
-    FPS = 100
-
-    SCREEN_WIDTH = 800
-    SCREEN_HEIGHT = 800
-    ud = False
-    lr = True
-
-    # create game window
-    screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-    pygame.display.set_caption("Endless Scroll")
-
-    # load image
-    bg = pygame.image.load("bg_lr.png").convert()
-    bg_width = bg.get_width()
-    bg_rect = bg.get_rect()
-
-    # define game variables
-    scroll = 0
-    tiles = math.ceil(SCREEN_WIDTH / bg_width) + 1
-
-    # game loop
-    pygame.mixer.music.play(-1)
-    run = True
-    while run:
-
-        clock.tick(FPS)
-        pygame.time.get_ticks()
-        # draw scrolling background
-        for i in range(0, tiles):
-            screen.blit(bg, (i * bg_width + scroll, 0))
-            bg_rect.x = i * bg_width + scroll
-            # pygame.draw.rect(screen, (255, 0, 0), bg_rect, 1)
-
-        # scroll background
-        scroll -= 5
-
-        # reset scroll
-        if abs(scroll) > bg_width:
-            scroll = 0
-
-        # event handler
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                run = False
-            keys = pygame.key.get_pressed()
-            if event.type == pygame.KEYDOWN:
-                if not ud and (keys[pygame.K_UP] or keys[pygame.K_DOWN]):
-                    ud = True
-                    lr = False
-                    bg = pygame.transform.rotate(bg, 90)
-                    bg_width = bg.get_width()
-                    bg_rect = bg.get_rect()
-                    tiles = math.ceil(SCREEN_WIDTH / bg_width) + 1
-                if not lr and (keys[pygame.K_LEFT] or keys[pygame.K_RIGHT]):
-                    lr = True
-                    ud = False
-                    bg = pygame.transform.rotate(bg, -90)
-                    bg_width = bg.get_width()
-                    bg_rect = bg.get_rect()
-                    tiles = math.ceil(SCREEN_WIDTH / bg_width) + 1
-
-        pygame.display.update()
-
-    pygame.mixer.stop()
-    pygame.mixer.quit()
-    pygame.quit()
-
-
 def main():
-    note_times = parse_musicxml("songs/Phineas and Ferb/score.xml")
+    note_times = parse_musicxml("songs/Death by Glamour/Death_by_Glamour_piano.musicxml")
     print(note_times)
-    # game_thread = threading.Thread(target=run_game)
-    # beat_thread = threading.Thread(target=print_beat_changes, args=(note_times,))
-
-    # game_thread.start()
-    # beat_thread.start()
-
-    # game_thread.join()
-    # beat_thread.join()
 
 
 if __name__ == "__main__":
