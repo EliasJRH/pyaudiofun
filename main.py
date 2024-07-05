@@ -2,7 +2,7 @@ from functools import cache
 import xml.etree.ElementTree as ET
 import os
 import inquirer
-from sleep_test import schedule_beats
+from visualizer import schedule_beats
 
 notes_to_beat = {
     "whole": 4,
