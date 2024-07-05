@@ -42,25 +42,49 @@ def get_divisions(element):
 def parse_musicxml(file):
     tree = ET.parse(file)
     measures = tree.find("part").findall("measure")
-    note_delays_seconds = []
-    last_second = 0
+    primary_note_delays_seconds = []
+    secondary_note_delays_seconds = []
+    seconds_from_last_measure = 0
+    last_primary_second = 0
+    last_secondary_second = 0
     tempo = None
     sbp = None # Second per beat, how long a beat lasts in seconds, used to calculate note delays
     divisions = None # Number of divisions per beat, used to calculate note delays in absence of note type
+    tempo_changed = False
+    changed_tempo_item = None
 
-    for n, m in enumerate(measures):
-        items = m.iterfind("*")  # Used to find all notes
-        for item in items:
-            
-            # We only want to look at the primary notes, so we ignore the backup notes
+    for measure_num, measure in enumerate(measures):
+        recording_backup_notes = False # backup notes occur once per measure at most, so the flag is reset per measure
+        items = measure.iterfind("*")  # Used to find all notes
+        tempo_changes = []
+        item_num = 0
+        # for item_num, item in enumerate(items):
+        while item_num < len(items):
+            item = items[item_num]
             if item.tag == "note":
-                # Notes marked as a chord are played as part of the same beat as the previous note at the same time, so we ignore them 
+                # x_pos is recorded to find out when tempo changes occur
+                x_pos = item.get("default-x")
+
+                # Notes marked as a chord are played as part of the same note as the previous note at the same time, so we ignore the
+                # completely
                 is_chord = item.find("chord") is not None
                 if is_chord: continue
 
+                # In order to match tempos for the secondary notes, we need to record when the tempo changes during the primary notes
+                # This is purely because of the fact that musicxml files only record tempo changes on the primary set of notes which makes
+                # sense given that this a codefied representation of the sheet music
+                # The tempo_changed flag is used because we can only determine the x_pos at which the tempo_change occurs after the next
+                # note is encountered
+                if tempo_changed: 
+                    tempo_changes.append((x_pos, changed_tempo_item))
+                    tempo_changed = False
+
                 # Note delay seconds indicates the time in seconds after the beginning of the song that the note should be played
-                # If a note is a rest note OR if it is the end of a tied note, we ignore it because it won't be played
-                if (item.find("tie") is None or item.find("tie").get("type") != "stop") and item.find("rest") is None: note_delays_seconds.append((n + 1, last_second))
+                # If a note is a rest note OR if it is the end of a tied note, we don't record it's beat time because it won't 
+                # played however, we still add the time it takes to the play that note to the overall time+
+                if (item.find("tie") is None or item.find("tie").get("type") != "stop") and item.find("rest") is None: 
+                    if recording_backup_notes: secondary_note_delays_seconds.append((measure_num+1, last_secondary_second))
+                    else: primary_note_delays_seconds.append((measure_num + 1, last_primary_second))
 
                 # Calculate next beat time
 
@@ -75,15 +99,28 @@ def parse_musicxml(file):
                     num_beats = (int(duration) / divisions) * (1.5 if dotted else 1)
                 
                 # Update next beat time
-                last_second += num_beats * sbp
+                if recording_backup_notes: last_secondary_second += num_beats * sbp
+                else: last_primary_second += num_beats * sbp
             elif item.tag == "direction":
+                # If the direction tag contains a new tempo, we change the tempo and seconds per beat
                 tempo = int(get_tempo(item)) if get_tempo(item) else tempo
-                if tempo: sbp = 60 / tempo
+                if tempo: 
+                    sbp = 60 / tempo
+                    tempo_changed = True
+                    changed_tempo_item = item
             elif item.tag == "attributes":
+                # Obtains divisions for when note type is omitted
                 divisions = int(get_divisions(item)) if get_divisions(item) else divisions
             elif item.tag == "backup":
-                break
-    return note_delays_seconds
+                if not recording_backup_notes: 
+                    recording_backup_notes = True
+                    temp = item_num + 1
+                    while temp < len(items) and len(tempo_changes) > 0:
+                        if items[temp].tag == "note" and not items[temp].get("chord") and items[temp].get("default-x"): pass
+                        temp += 1
+                else: break
+            item_num += 1
+    return (primary_note_delays_seconds, secondary_note_delays_seconds)
 
 
 def main():
