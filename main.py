@@ -44,7 +44,6 @@ def parse_musicxml(file):
     measures = tree.find("part").findall("measure")
     primary_note_delays_seconds = []
     secondary_note_delays_seconds = []
-    seconds_from_last_measure = 0
     last_primary_second = 0
     last_secondary_second = 0
     tempo = None
@@ -131,7 +130,7 @@ def parse_musicxml(file):
 
 
 def main():
-    song_dirs = os.listdir("songs")
+    song_dirs = sorted(os.listdir("songs"))
     # Only display song directories that contain a musicxml file and a midi file
     # I'm going to assume that they'll always be valid, otherwise ¯\_(ツ)_/¯
     song_choices = [inquirer.List("song", 
@@ -147,10 +146,9 @@ def main():
     musicxml_fpath = f"songs/{ans["song"]}/{musicxml_fname}"
     midi_fname = [f for f in os.listdir(f"songs/{ans["song"]}") if f.endswith(".mid")][0]
     midi_fpath = f"songs/{ans["song"]}/{midi_fname}"
-    # print(musicxml_fname)
-    beat_times = parse_musicxml(musicxml_fpath)
-    print(beat_times[1])
-    schedule_beats(beat_times[1], midi_fpath)
+
+    primary_beat_times, secondary_beat_times = parse_musicxml(musicxml_fpath)
+    schedule_beats(primary_beat_times, secondary_beat_times, midi_fpath)
 
 
 if __name__ == "__main__":
