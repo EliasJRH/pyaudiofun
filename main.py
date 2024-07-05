@@ -57,7 +57,6 @@ def parse_musicxml(file):
         items = list(measure.iterfind("*"))  # Used to find all notes
         tempo_changes = []
         item_num = 0
-        # for item_num, item in enumerate(items):
         while item_num < len(items):
             item = items[item_num]
             if item.tag == "note":
@@ -105,7 +104,7 @@ def parse_musicxml(file):
             elif item.tag == "direction":
                 # If the direction tag contains a new tempo, we change the tempo and seconds per beat
                 tempo = int(get_tempo(item)) if get_tempo(item) else tempo
-                if tempo: 
+                if tempo:
                     sbp = 60 / tempo
                     tempo_changed = True
                     changed_tempo_item = item
@@ -119,9 +118,9 @@ def parse_musicxml(file):
                     while cur_ind < len(items) and len(tempo_changes) > 0:
                         next_item = items[cur_ind]
                         if next_item.tag == "note" and not next_item.get("chord"):
-                            if next_item.get("default-x") == tempo_changes[0]["x_pos"]: 
+                            if float(next_item.get("default-x")) == float(tempo_changes[0]["x_pos"]): 
                                 items.insert(cur_ind, tempo_changes.pop(0)["tempo_item"])
-                            elif next_item.get("default-x") > tempo_changes[0]["x_pos"]:
+                            elif float(next_item.get("default-x")) > float(tempo_changes[0]["x_pos"]):
                                 item.insert(cur_ind-1, tempo_changes.pop(0)["tempo_item"])
                         cur_ind += 1
                 else: break
