@@ -55,7 +55,8 @@ def parse_musicxml(file):
 
     for measure_num, measure in enumerate(measures):
         recording_backup_notes = False # backup notes occur once per measure at most, so the flag is reset per measure
-        items = measure.iterfind("*")  # Used to find all notes
+        items = list(measure.iterfind("*"))  # Used to find all notes
+        print(measure_num, len(items))
         tempo_changes = []
         item_num = 0
         # for item_num, item in enumerate(items):
@@ -68,7 +69,9 @@ def parse_musicxml(file):
                 # Notes marked as a chord are played as part of the same note as the previous note at the same time, so we ignore the
                 # completely
                 is_chord = item.find("chord") is not None
-                if is_chord: continue
+                if is_chord:
+                    item_num += 1 # Continue will go to start of while loop without incrementing item_num, have to increment here
+                    continue
 
                 # In order to match tempos for the secondary notes, we need to record when the tempo changes during the primary notes
                 # This is purely because of the fact that musicxml files only record tempo changes on the primary set of notes which makes
@@ -125,8 +128,8 @@ def parse_musicxml(file):
 
 def main():
     song_dirs = os.listdir("songs")
-    # Only display song that contain a musicxml file and a midi file
-    # I'm going to assume that they'll always be valid otherwise ¯\_(ツ)_/¯
+    # Only display song directories that contain a musicxml file and a midi file
+    # I'm going to assume that they'll always be valid, otherwise ¯\_(ツ)_/¯
     song_choices = [inquirer.List("song", 
                                  message="Pick a song", 
                                  choices=[song for song in song_dirs if 
@@ -134,14 +137,16 @@ def main():
                                           len(list(filter(lambda x: x.endswith(".mid"), os.listdir(f"songs/{song}"))))]
                                 )]
     ans = inquirer.prompt(song_choices)
+
+    # I'm also assuming that there's exactly one of each type of file
     musicxml_fname = [f for f in os.listdir(f"songs/{ans["song"]}") if f.endswith(".musicxml")][0]
     musicxml_fpath = f"songs/{ans["song"]}/{musicxml_fname}"
     midi_fname = [f for f in os.listdir(f"songs/{ans["song"]}") if f.endswith(".mid")][0]
     midi_fpath = f"songs/{ans["song"]}/{midi_fname}"
-    print(musicxml_fname)
+    # print(musicxml_fname)
     beat_times = parse_musicxml(musicxml_fpath)
-    print(beat_times)
-    schedule_beats(beat_times, midi_fpath)
+    # print(beat_times[0])
+    schedule_beats(beat_times[0], midi_fpath)
 
 
 if __name__ == "__main__":
