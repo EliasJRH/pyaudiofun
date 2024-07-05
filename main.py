@@ -56,7 +56,6 @@ def parse_musicxml(file):
     for measure_num, measure in enumerate(measures):
         recording_backup_notes = False # backup notes occur once per measure at most, so the flag is reset per measure
         items = list(measure.iterfind("*"))  # Used to find all notes
-        print(measure_num, len(items))
         tempo_changes = []
         item_num = 0
         # for item_num, item in enumerate(items):
@@ -79,7 +78,7 @@ def parse_musicxml(file):
                 # The tempo_changed flag is used because we can only determine the x_pos at which the tempo_change occurs after the next
                 # note is encountered
                 if tempo_changed: 
-                    tempo_changes.append((x_pos, changed_tempo_item))
+                    tempo_changes.append({"x_pos": x_pos, "tempo_item": changed_tempo_item})
                     tempo_changed = False
 
                 # Note delay seconds indicates the time in seconds after the beginning of the song that the note should be played
@@ -117,10 +116,15 @@ def parse_musicxml(file):
             elif item.tag == "backup":
                 if not recording_backup_notes: 
                     recording_backup_notes = True
-                    temp = item_num + 1
-                    while temp < len(items) and len(tempo_changes) > 0:
-                        if items[temp].tag == "note" and not items[temp].get("chord") and items[temp].get("default-x"): pass
-                        temp += 1
+                    cur_ind = item_num + 1
+                    while cur_ind < len(items) and len(tempo_changes) > 0:
+                        next_item = items[cur_ind]
+                        if next_item.tag == "note" and not next_item.get("chord"):
+                            if next_item.get("default-x") == tempo_changes[0]["x_pos"]: 
+                                items.insert(cur_ind, tempo_changes.pop(0)["tempo_item"])
+                            elif next_item.get("default-x") > tempo_changes[0]["x_pos"]:
+                                item.insert(cur_ind-1, tempo_changes.pop(0)["tempo_item"])
+                        cur_ind += 1
                 else: break
             item_num += 1
     return (primary_note_delays_seconds, secondary_note_delays_seconds)
@@ -145,8 +149,8 @@ def main():
     midi_fpath = f"songs/{ans["song"]}/{midi_fname}"
     # print(musicxml_fname)
     beat_times = parse_musicxml(musicxml_fpath)
-    # print(beat_times[0])
-    schedule_beats(beat_times[0], midi_fpath)
+    print(beat_times[1])
+    schedule_beats(beat_times[1], midi_fpath)
 
 
 if __name__ == "__main__":
