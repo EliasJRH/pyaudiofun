@@ -5,7 +5,6 @@ import os
 
 left_open = False
 right_open = False
-c = 0
 
 def print_cats():
     os.system("cls" if os.name == "nt" else "clear")
