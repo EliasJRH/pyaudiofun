@@ -47,19 +47,19 @@ def close_right(delay):
     print_cats()
 
 # Define the action to be performed
-def perform_action(x):
-    print(f"Action performed at {time.time()} for delay: {x} seconds")
+def perform_action(x, m):
+    print(f"Action performed at {time.time()} for delay: {x} seconds, measure {m}")
 
 # Define a function to wait and perform the action
-def schedule_action(delay):
+def schedule_action(delay, measure):
     time.sleep(delay)
-    perform_action(delay)
+    perform_action(delay, measure)
 
 def schedule_beats(primary_beat_times, secondary_beat_times, midi_fpath):
     pygame.mixer.init()
     pygame.mixer.music.load(midi_fpath)
-    print(primary_beat_times)
     for x in range(len(primary_beat_times) - 1):
+        # threading.Thread(target=schedule_action, args=(primary_beat_times[x][1], primary_beat_times[x][0],)).start()
         threading.Thread(target=open_left, args=(primary_beat_times[x][1],)).start()
         close_time = primary_beat_times[x][1] + (primary_beat_times[x + 1][1] - primary_beat_times[x][1]) / 2
         threading.Thread(target=close_left, args=(close_time,)).start()
