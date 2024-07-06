@@ -125,7 +125,9 @@ def parse_musicxml(file):
                         cur_ind += 1
                 else: break
             item_num += 1
-    return (primary_note_delays_seconds, secondary_note_delays_seconds)
+            
+    song_length = max(primary_note_delays_seconds[-1][1], secondary_note_delays_seconds[-1][1]) + (sbp * 4)
+    return (primary_note_delays_seconds, secondary_note_delays_seconds, song_length)
 
 
 def main():
@@ -146,8 +148,8 @@ def main():
     midi_fname = [f for f in os.listdir(f"songs/{ans["song"]}") if f.endswith(".mid")][0]
     midi_fpath = f"songs/{ans["song"]}/{midi_fname}"
 
-    primary_beat_times, secondary_beat_times = parse_musicxml(musicxml_fpath)
-    schedule_beats(primary_beat_times, secondary_beat_times, midi_fpath)
+    primary_beat_times, secondary_beat_times, song_length = parse_musicxml(musicxml_fpath)
+    schedule_beats(primary_beat_times, secondary_beat_times, midi_fpath, song_length)
 
 
 if __name__ == "__main__":

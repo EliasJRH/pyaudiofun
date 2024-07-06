@@ -54,7 +54,7 @@ def schedule_action(delay, measure):
     time.sleep(delay)
     perform_action(delay, measure)
 
-def schedule_beats(primary_beat_times, secondary_beat_times, midi_fpath):
+def schedule_beats(primary_beat_times, secondary_beat_times, midi_fpath, song_length):
     pygame.mixer.init()
     pygame.mixer.music.load(midi_fpath)
     for x in range(len(primary_beat_times) - 1):
@@ -64,7 +64,7 @@ def schedule_beats(primary_beat_times, secondary_beat_times, midi_fpath):
         threading.Thread(target=close_left, args=(close_time,)).start()
 
     threading.Thread(target=open_left, args=(primary_beat_times[-1][1],)).start()
-    threading.Thread(target=close_left, args=(primary_beat_times[-1][1] + 0.2,)).start()
+    threading.Thread(target=close_left, args=(primary_beat_times[-1][1] + 0.5,)).start()
 
     if secondary_beat_times:
         for x in range(len(secondary_beat_times) - 1):
@@ -73,8 +73,8 @@ def schedule_beats(primary_beat_times, secondary_beat_times, midi_fpath):
             threading.Thread(target=close_right, args=(close_time,)).start()
 
         threading.Thread(target=open_right, args=(secondary_beat_times[-1][1],)).start()
-        threading.Thread(target=close_right, args=(secondary_beat_times[-1][1] + 0.2,)).start()
+        threading.Thread(target=close_right, args=(secondary_beat_times[-1][1] + 0.5,)).start()
 
-    pygame.mixer.music.play(-1)
+    pygame.mixer.music.play(0)
 
-    print("All actions scheduled.")
+    time.sleep(song_length)
