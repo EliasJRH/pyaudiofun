@@ -2,6 +2,7 @@ from functools import cache
 import xml.etree.ElementTree as ET
 import os
 import inquirer
+import argparse, sys
 from visualizer import schedule_beats
 
 notes_to_beat = {
@@ -38,6 +39,13 @@ def get_divisions(element):
         return element.find("divisions").text
     except AttributeError:
         return None
+    
+def calculate_time_modification(element):
+    try:
+        return (int(element.find("time-modification").find("normal-notes").text) / 
+                int(element.find("time-modification").find("actual-notes").text))
+    except AttributeError:
+        return 1
 
 def parse_musicxml(file):
     tree = ET.parse(file)
@@ -51,6 +59,7 @@ def parse_musicxml(file):
     divisions = None # Number of divisions per beat, used to calculate note delays in absence of note type
     tempo_changed = False
     changed_tempo_item = None
+    time_modifier = 1
 
     for measure_num, measure in enumerate(measures):
         recording_backup_notes = False # backup notes occur once per measure at most, so the flag is reset per measure
@@ -73,7 +82,7 @@ def parse_musicxml(file):
                 # In order to match tempos for the secondary notes, we need to record when the tempo changes during the primary notes
                 # This is purely because of the fact that musicxml files only record tempo changes on the primary set of notes which makes
                 # sense given that this a codefied representation of the sheet music
-                # The tempo_changed flag is used because we can only determine the x_pos at which the tempo_change occurs after the next
+                # The tempo_changed flag is used because we can only determine the x_pos at which the tempo change occurs after the next
                 # note is encountered
                 if tempo_changed: 
                     tempo_changes.append({"x_pos": x_pos, "tempo_item": changed_tempo_item})
@@ -86,19 +95,21 @@ def parse_musicxml(file):
                     if recording_backup_notes: secondary_note_delays_seconds.append((measure_num+1, last_secondary_second))
                     else: primary_note_delays_seconds.append((measure_num + 1, last_primary_second))
 
-                # Calculate next beat time
+                # Calculate next beat time for next note
 
                 # If the note is dotted, we'll need to add an additional half of its length
                 dotted = True if item.find("dot") is not None else False
 
+                time_modifier = calculate_time_modification(item)
+
                 try: 
                     type = item.find("type").text  # Type of note (whole, half, etc)
-                    num_beats = notes_to_beat[type] + (notes_to_beat[type] / 2 if dotted else 0)
+                    num_beats = (notes_to_beat[type] + (notes_to_beat[type] / 2 if dotted else 0)) * time_modifier
                 except AttributeError:
                     duration = item.find("duration").text  # If the type of note is not specified, we use the duration
-                    num_beats = (int(duration) / divisions) * (1.5 if dotted else 1)
+                    num_beats = ((int(duration) / divisions) * (1.5 if dotted else 1)) * time_modifier
                 
-                # Update next beat time
+                # Update next beat time for the next note
                 if recording_backup_notes: last_secondary_second += num_beats * sbp
                 else: last_primary_second += num_beats * sbp
             elif item.tag == "direction":
@@ -125,7 +136,7 @@ def parse_musicxml(file):
                         cur_ind += 1
                 else: break
             item_num += 1
-            
+
     song_length = max(primary_note_delays_seconds[-1][1], secondary_note_delays_seconds[-1][1]) + (sbp * 4)
     return (primary_note_delays_seconds, secondary_note_delays_seconds, song_length)
 
