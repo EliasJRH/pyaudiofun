@@ -129,8 +129,15 @@ def parse_musicxml(file):
     song_length = max(primary_note_delays_seconds[-1][1], secondary_note_delays_seconds[-1][1]) + (sbp * 4)
     return (primary_note_delays_seconds, secondary_note_delays_seconds, song_length)
 
+def parse_cmd_args():
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument("--debug", help="Run in debug mode", default=False, action="store_true")
+    args = arg_parser.parse_args()
+    return args
 
 def main():
+    args = parse_cmd_args()
+
     song_dirs = sorted(os.listdir("songs"))
     # Only display song directories that contain a musicxml file and a midi file
     # I'm going to assume that they'll always be valid, otherwise ¯\_(ツ)_/¯
@@ -149,7 +156,7 @@ def main():
     midi_fpath = f"songs/{ans["song"]}/{midi_fname}"
 
     primary_beat_times, secondary_beat_times, song_length = parse_musicxml(musicxml_fpath)
-    schedule_beats(primary_beat_times, secondary_beat_times, midi_fpath, song_length)
+    schedule_beats(primary_beat_times, secondary_beat_times, midi_fpath, song_length, args.debug)
 
 
 if __name__ == "__main__":

@@ -54,26 +54,30 @@ def schedule_action(delay, measure):
     time.sleep(delay)
     perform_action(delay, measure)
 
-def schedule_beats(primary_beat_times, secondary_beat_times, midi_fpath, song_length):
+def schedule_beats(primary_beat_times, secondary_beat_times, midi_fpath, song_length, debug):
     pygame.mixer.init()
     pygame.mixer.music.load(midi_fpath)
-    for x in range(len(primary_beat_times) - 1):
-        # threading.Thread(target=schedule_action, args=(primary_beat_times[x][1], primary_beat_times[x][0],)).start()
-        threading.Thread(target=open_left, args=(primary_beat_times[x][1],)).start()
-        close_time = primary_beat_times[x][1] + (primary_beat_times[x + 1][1] - primary_beat_times[x][1]) / 2
-        threading.Thread(target=close_left, args=(close_time,)).start()
 
-    threading.Thread(target=open_left, args=(primary_beat_times[-1][1],)).start()
-    threading.Thread(target=close_left, args=(primary_beat_times[-1][1] + 0.5,)).start()
+    if debug:
+        for x in range(len(primary_beat_times)):
+            threading.Thread(target=schedule_action, args=(primary_beat_times[x][1], primary_beat_times[x][0],)).start()
+    else:
+        for x in range(len(primary_beat_times) - 1):        
+            threading.Thread(target=open_left, args=(primary_beat_times[x][1],)).start()
+            close_time = primary_beat_times[x][1] + (primary_beat_times[x + 1][1] - primary_beat_times[x][1]) / 2
+            threading.Thread(target=close_left, args=(close_time,)).start()
 
-    if secondary_beat_times:
-        for x in range(len(secondary_beat_times) - 1):
-            threading.Thread(target=open_right, args=(secondary_beat_times[x][1],)).start()
-            close_time = secondary_beat_times[x][1] + (secondary_beat_times[x + 1][1] - secondary_beat_times[x][1]) / 2
-            threading.Thread(target=close_right, args=(close_time,)).start()
+        threading.Thread(target=open_left, args=(primary_beat_times[-1][1],)).start()
+        threading.Thread(target=close_left, args=(primary_beat_times[-1][1] + 0.5,)).start()
 
-        threading.Thread(target=open_right, args=(secondary_beat_times[-1][1],)).start()
-        threading.Thread(target=close_right, args=(secondary_beat_times[-1][1] + 0.5,)).start()
+        if secondary_beat_times:
+            for x in range(len(secondary_beat_times) - 1):
+                threading.Thread(target=open_right, args=(secondary_beat_times[x][1],)).start()
+                close_time = secondary_beat_times[x][1] + (secondary_beat_times[x + 1][1] - secondary_beat_times[x][1]) / 2
+                threading.Thread(target=close_right, args=(close_time,)).start()
+
+            threading.Thread(target=open_right, args=(secondary_beat_times[-1][1],)).start()
+            threading.Thread(target=close_right, args=(secondary_beat_times[-1][1] + 0.5,)).start()
 
     pygame.mixer.music.play(0)
 
