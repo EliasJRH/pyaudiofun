@@ -137,7 +137,9 @@ def parse_musicxml(file):
                 else: break
             item_num += 1
 
-    song_length = max(primary_note_delays_seconds[-1][1], secondary_note_delays_seconds[-1][1]) + (sbp * 4)
+    if primary_note_delays_seconds and secondary_note_delays_seconds:
+        song_length = max(primary_note_delays_seconds[-1][1], secondary_note_delays_seconds[-1][1]) + (sbp * 4)
+    else: song_length = primary_note_delays_seconds[-1][1] + (sbp * 4)
     return (primary_note_delays_seconds, secondary_note_delays_seconds, song_length)
 
 def parse_cmd_args():
