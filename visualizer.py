@@ -5,21 +5,19 @@ import os
 
 left_open = False
 right_open = False
+open_open, open_closed, closed_open, closed_closed = "", "", "", ""
 
 def print_cats():
+    global open_open, open_closed, closed_open, closed_closed
     os.system("cls" if os.name == "nt" else "clear")
     if left_open and right_open:
-        with open("cats/open_open.txt", "r") as f:
-            print(f.read())
+        print(open_open)
     elif left_open:
-        with open("cats/open_closed.txt", "r") as f:
-            print(f.read())
+        print(open_closed)
     elif right_open:
-        with open("cats/closed_open.txt", "r") as f:
-            print(f.read())
+        print(closed_open)
     else:
-        with open("cats/closed_closed.txt", "r") as f:
-            print(f.read())
+        print(closed_closed)
 
 def open_left(delay):
     global left_open
@@ -55,8 +53,19 @@ def schedule_action(delay, measure):
     perform_action(delay, measure)
 
 def schedule_beats(primary_beat_times, secondary_beat_times, midi_fpath, song_length, debug):
+    global open_open, open_closed, closed_open, closed_closed
+    with open("cats/open_open.txt", "r") as f:
+            open_open = f.read()
+    with open("cats/open_closed.txt", "r") as f:
+        open_closed = f.read()
+    with open("cats/closed_open.txt", "r") as f:
+        closed_open = f.read()
+    with open("cats/closed_closed.txt", "r") as f:
+        closed_closed = f.read()
+
     pygame.mixer.init()
     pygame.mixer.music.load(midi_fpath)
+    pygame.mixer.music.play(0)
 
     if debug:
         for x in range(len(primary_beat_times)):
@@ -79,6 +88,5 @@ def schedule_beats(primary_beat_times, secondary_beat_times, midi_fpath, song_le
             threading.Thread(target=open_right, args=(secondary_beat_times[-1][1],)).start()
             threading.Thread(target=close_right, args=(secondary_beat_times[-1][1] + 0.5,)).start()
 
-    pygame.mixer.music.play(0)
 
     time.sleep(song_length)
